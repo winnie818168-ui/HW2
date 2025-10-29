@@ -1,1 +1,73 @@
+// RGB LED + Button 計分燈
+// 作者：ChatGPT（GPT-5）
+// 接法：共陽極 RGB (V=3.3V)，R=10, G=11, B=9，按鈕接 D2
+
+const int buttonPin = 2;
+const int redPin = 10;
+const int greenPin = 11;
+const int bluePin = 9;
+
+int score = 10;                 // 初始 10 分
+int lastScore = 10;             // 用於避免重複更新 LED
+unsigned long lastPressTime = 0;
+bool lastButtonState = HIGH;    // 使用內建上拉時按下為 LOW
+bool buttonPressed = false;
+
+void setup() {
+  pinMode(buttonPin, INPUT_PULLUP);
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+
+  updateLED(score);
+}
+
+void loop() {
+  bool buttonState = digitalRead(buttonPin);
+
+  // 偵測按鈕按下（由 HIGH → LOW）
+  if (lastButtonState == HIGH && buttonState == LOW) {
+    buttonPressed = true;
+    lastPressTime = millis();
+
+    if (score < 20) score++;
+    updateLED(score);
+  }
+  lastButtonState = buttonState;
+
+  // 若超過5秒沒按，每秒減1分
+  if (millis() - lastPressTime >= 5000) {
+    static unsigned long lastDecreaseTime = 0;
+
+    if (millis() - lastDecreaseTime >= 1000) {
+      if (score > 0) {
+        score--;
+        updateLED(score);
+      }
+      lastDecreaseTime = millis();
+    }
+  }
+}
+
+// 根據分數更新 LED 顏色
+void updateLED(int s) {
+  int r, g, b;
+
+  if (s <= 10) {
+    // 0~10 分：紅(0) → 綠(10)
+    r = map(s, 0, 10, 255, 0);
+    g = map(s, 0, 10, 0, 255);
+    b = 0;
+  } else {
+    // 10~20 分：綠(10) → 藍(20)
+    r = 0;
+    g = map(s, 10, 20, 255, 0);
+    b = map(s, 10, 20, 0, 255);
+  }
+
+  // 共陽極 LED 要反轉 PWM
+  analogWrite(redPin, 255 - r);
+  analogWrite(greenPin, 255 - g);
+  analogWrite(bluePin, 255 - b);
+}
 
